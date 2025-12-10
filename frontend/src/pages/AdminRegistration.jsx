@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/apiConfig';
 import toast from 'react-hot-toast';
 import {
   UserIcon,
@@ -39,32 +40,20 @@ const AdminRegistration = () => {
 
     const toastId = 'admin-register-toast';
     try {
-      const response = await fetch('http://localhost:5000/api/users/create-admin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          adminCode: formData.adminCode
-        }),
-        credentials: 'include'
+      const { data } = await api.post('/users/create-admin', {
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+        adminCode: formData.adminCode
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      toast.success('Admin registration successful', { id: toastId });
-      navigate('/dashboard');
+      toast.success('Admin registered successfully!', { id: toastId });
+      navigate('/admin-login');
     } catch (err) {
-      setError(err.message);
-      toast.error(err.message, { id: toastId });
+      setError(err.message || 'Registration failed');
+      toast.error(err.message || 'Registration failed', { id: toastId });
     }
+  };
   };
 
   return (

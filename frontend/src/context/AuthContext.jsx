@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from 'react';
+import api from '../api/apiConfig';
 
 const AuthContext = createContext();
 
@@ -20,21 +21,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include'
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Login failed');
-      }
-
-      const data = await response.json();
+      const { data } = await api.post('/users/login', { email, password });
 
       // Store the entire response including token
       setUser(data);
@@ -52,9 +39,6 @@ export const AuthProvider = ({ children }) => {
 
       return data; // Return the data for components to check user type
     } catch (error) {
-      if (error.message === 'Failed to fetch') {
-        throw new Error('Unable to connect to the server. Please check your connection.');
-      }
       throw error;
     } finally {
       setLoading(false);
@@ -75,21 +59,8 @@ export const AuthProvider = ({ children }) => {
   const register = async (name, email, password, mobileNumber) => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email, password, mobileNumber }),
-        credentials: 'include'
-      });
+      const { data } = await api.post('/users', { name, email, password, mobileNumber });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Registration failed');
-      }
-
-      const data = await response.json();
       setUser(data);
 
       // Store in separate keys based on user type to prevent cross-tab conflicts
@@ -102,9 +73,6 @@ export const AuthProvider = ({ children }) => {
       }
       return data; // Return the data to let the component handle success
     } catch (error) {
-      if (error.message === 'Failed to fetch') {
-        throw new Error('Unable to connect to the server. Please check your connection.');
-      }
       throw error;
     } finally {
       setLoading(false);

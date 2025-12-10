@@ -1,7 +1,5 @@
 import axios from 'axios';
-
-const API_ORIGIN = import.meta.env.VITE_API_ORIGIN || 'http://localhost:5000';
-const BASE_URL = `${API_ORIGIN}/api`;
+import { BASE_URL } from './apiConfig';
 
 const api = axios.create({
   baseURL: `${BASE_URL}/reports`,

@@ -11,7 +11,7 @@ const getApiOrigin = () => {
 };
 
 const API_ORIGIN = getApiOrigin();
-const BASE_URL = `${API_ORIGIN}/api`;
+export const BASE_URL = `${API_ORIGIN}/api`;
 
 export const MEDIA_BASE_URL = API_ORIGIN;
 

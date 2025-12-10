@@ -21,6 +21,8 @@ import {
   ClockIcon
 } from '@heroicons/react/24/outline';
 
+import { MEDIA_BASE_URL } from '../api/apiConfig';
+
 const BrowseRooms = () => {
   const navigate = useNavigate();
   const [rooms, setRooms] = useState([]);
@@ -80,7 +82,6 @@ const BrowseRooms = () => {
 
   const resolveImageUrl = (imagePath) => {
     if (!imagePath) return '';
-    const MEDIA_BASE_URL = import.meta.env.VITE_API_ORIGIN || 'http://localhost:5000';
     return imagePath.startsWith('http')
       ? imagePath
       : `${MEDIA_BASE_URL}/${imagePath.replace(/^\/+/, '')}`;
