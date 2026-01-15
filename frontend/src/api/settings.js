@@ -1,17 +1,8 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-const getAuthHeader = () => {
-    const admin = JSON.parse(localStorage.getItem('adminInfo'));
-    const user = JSON.parse(localStorage.getItem('userInfo'));
-    const token = admin?.token || user?.token;
-    return token ? { Authorization: `Bearer ${token}` } : {};
-};
+import api from './apiConfig';
 
 // Get System Settings (Publicly accessible for QR display)
 export const getSettings = async () => {
-    const response = await axios.get(`${API_URL}/settings`);
+    const response = await api.get('/settings');
     return response.data;
 };
 
@@ -26,9 +17,8 @@ export const updateSettings = async (data) => {
         formData.append('paymentQrCode', data.paymentQrCode);
     }
 
-    const response = await axios.put(`${API_URL}/settings`, formData, {
+    const response = await api.put('/settings', formData, {
         headers: {
-            ...getAuthHeader(),
             'Content-Type': 'multipart/form-data',
         },
     });

@@ -1,14 +1,4 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-// Create API instance with token
-const getAuthHeader = () => {
-    const admin = JSON.parse(localStorage.getItem('adminInfo'));
-    const user = JSON.parse(localStorage.getItem('userInfo'));
-    const token = admin?.token || user?.token;
-    return token ? { Authorization: `Bearer ${token}` } : {};
-};
+import api from './apiConfig';
 
 // Submit Payment (with file upload)
 export const submitPayment = async (data) => {
@@ -25,9 +15,8 @@ export const submitPayment = async (data) => {
         formData.append('proofImage', data.proofImage);
     }
 
-    const response = await axios.post(`${API_URL}/payments`, formData, {
+    const response = await api.post('/payments', formData, {
         headers: {
-            ...getAuthHeader(),
             'Content-Type': 'multipart/form-data',
         },
     });
@@ -36,18 +25,12 @@ export const submitPayment = async (data) => {
 
 // Get Payments (User: My Payments, Admin: All)
 export const getPayments = async () => {
-    const response = await axios.get(`${API_URL}/payments`, {
-        headers: getAuthHeader(),
-    });
+    const response = await api.get('/payments');
     return response.data;
 };
 
 // Verify Payment (Admin)
 export const verifyPayment = async (paymentId, status, remarks = '') => {
-    const response = await axios.put(
-        `${API_URL}/payments/${paymentId}/verify`,
-        { status, remarks },
-        { headers: getAuthHeader() }
-    );
+    const response = await api.put(`/payments/${paymentId}/verify`, { status, remarks });
     return response.data;
 };
