@@ -21,3 +21,4 @@ backend/.vscode/
 frontend/.vscode/
 backend/.DS_Store
 frontend/.DS_Store
+backend/uploads/

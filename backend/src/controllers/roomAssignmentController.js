@@ -22,8 +22,8 @@ export const getAssignments = asyncHandler(async (req, res) => {
         .sort('-createdAt');
     } else {
       // Users see only their own assignments
-      assignments = await RoomAssignment.find({ 
-        requestedBy: req.user._id 
+      assignments = await RoomAssignment.find({
+        requestedBy: req.user._id
       })
         .populate({
           path: 'requestedBy',
@@ -101,7 +101,7 @@ export const createAssignment = asyncHandler(async (req, res) => {
     // Check if user already has an active or pending assignment
     const existingAssignment = await RoomAssignment.findOne({
       requestedBy: req.user._id,
-      status: { $in: ['pending', 'active'] }
+      status: { $in: ['pending', 'active', 'awaiting_payment', 'verification_pending', 'payment_pending'] }
     });
 
     if (existingAssignment) {
@@ -116,23 +116,23 @@ export const createAssignment = asyncHandler(async (req, res) => {
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const year = now.getFullYear();
       const datePart = `${day}${month}${year}`;
-      
+
       // Generate a random alphanumeric code
       const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
       let randomCode = '';
       for (let i = 0; i < 6; i++) {
         randomCode += characters.charAt(Math.floor(Math.random() * characters.length));
       }
-      
+
       const referenceNumber = `REF-${datePart}-${randomCode}`;
-      
+
       // Check if reference number already exists (very unlikely but safe to check)
       const existing = await RoomAssignment.findOne({ referenceNumber });
       if (existing) {
         // Recursively generate new one if collision occurs
         return generateReferenceNumber();
       }
-      
+
       return referenceNumber;
     };
 
@@ -175,7 +175,7 @@ export const updateAssignment = asyncHandler(async (req, res) => {
   try {
     const { status, notes } = req.body;
     console.log(`[Assignment Controller] Updating assignment ${req.params.id} to status: ${status}`);
-    
+
     const assignment = await RoomAssignment.findById(req.params.id);
 
     if (!assignment) {
@@ -200,7 +200,7 @@ export const updateAssignment = asyncHandler(async (req, res) => {
     console.log(`[Assignment Controller] Saving assignment with new status...`);
     const updatedAssignment = await assignment.save();
     console.log(`[Assignment Controller] Assignment saved successfully`);
-    
+
     const populatedAssignment = await RoomAssignment.findById(updatedAssignment._id)
       .populate('requestedBy', 'name email')
       .populate('room', 'number type capacity occupied')
@@ -220,11 +220,13 @@ export const updateAssignment = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 export const getPendingAssignments = asyncHandler(async (req, res) => {
   try {
-    const assignments = await RoomAssignment.find({ status: 'pending' })
+    const assignments = await RoomAssignment.find({
+      status: { $in: ['pending', 'awaiting_payment', 'verification_pending', 'payment_pending'] }
+    })
       .populate('requestedBy', 'name email userId mobileNumber')
       .populate('room', 'number floor type')
       .sort('-createdAt');
-    
+
     // Filter out assignments where the user has been deleted
     const validAssignments = assignments.filter(assignment => assignment.requestedBy);
     res.json(validAssignments);
@@ -292,7 +294,7 @@ export const checkoutAssignment = asyncHandler(async (req, res) => {
     const approvalTime = new Date(assignment.approvalTime || assignment.createdAt);
     const now = new Date();
     const diffHours = Math.abs(now - approvalTime) / 36e5;
-    
+
     if (diffHours <= 24) {
       // Within 24 hours: Cancel the booking (Refundable/Not counted in revenue)
       assignment.status = 'cancelled';
@@ -332,17 +334,17 @@ export const checkoutAssignment = asyncHandler(async (req, res) => {
 export const getPrintTransactions = asyncHandler(async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
-    
+
     // Build filter query
     let filter = {};
-    
+
     if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
-      
+
       // Set end date to end of day
       end.setHours(23, 59, 59, 999);
-      
+
       // Filter by both checkInTime and checkOutTime falling within the range
       filter.$or = [
         {
@@ -364,7 +366,7 @@ export const getPrintTransactions = asyncHandler(async (req, res) => {
         }
       ];
     }
-    
+
     const assignments = await RoomAssignment.find(filter)
       .populate({
         path: 'requestedBy',
@@ -379,14 +381,14 @@ export const getPrintTransactions = asyncHandler(async (req, res) => {
     const transactionsData = assignments.map(assignment => {
       const checkInDate = assignment.checkInTime || assignment.approvalTime || assignment.createdAt;
       const checkOutDate = assignment.checkOutTime;
-      
+
       // Calculate duration in days
       let duration = 'Ongoing';
       if (checkOutDate && checkInDate) {
         const daysStayed = Math.floor((new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24));
         duration = daysStayed + ' days';
       }
-      
+
       // Get room price (monthly rate)
       const roomPrice = assignment.room?.monthlyRate || 0;
       totalRoomPrice += roomPrice;
@@ -398,8 +400,8 @@ export const getPrintTransactions = asyncHandler(async (req, res) => {
         roomNumber: assignment.room?.number || 'N/A',
         roomType: assignment.room?.type || 'N/A',
         roomPrice: roomPrice,
-        status: assignment.status === 'completed' ? '✓ Check-out' : 
-                (assignment.status === 'active' || assignment.status === 'approved') ? '✓ Check-in' : 'Pending',
+        status: assignment.status === 'completed' ? '✓ Check-out' :
+          (assignment.status === 'active' || assignment.status === 'approved') ? '✓ Check-in' : 'Pending',
         approvalTime: assignment.approvalTime,
         checkInTime: checkInDate,
         checkOutTime: checkOutDate,

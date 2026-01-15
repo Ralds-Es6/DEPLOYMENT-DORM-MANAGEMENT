@@ -4,6 +4,7 @@ import { getRooms } from '../api/roomService';
 import { getAssignments, checkoutAssignment } from '../api/assignmentService';
 import toast from 'react-hot-toast';
 import ConfirmationModal from '../components/ConfirmationModal';
+import PaymentModal from '../components/PaymentModal';
 import {
   HomeIcon,
   KeyIcon,
@@ -31,6 +32,7 @@ const UserDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showConfirmation, setShowConfirmation] = useState({ isOpen: false, isWithin24Hours: false });
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [filterType, setFilterType] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -51,10 +53,10 @@ const UserDashboard = () => {
       ]);
 
       const pending = assignments.find(
-        a => a.requestedBy?._id === user._id && a.status === 'pending'
+        a => a.requestedBy?._id === user._id && ['pending', 'awaiting_payment', 'verification_pending', 'payment_pending'].includes(a.status)
       );
       const history = assignments.filter(
-        a => a.requestedBy?._id === user._id && ['pending', 'approved', 'active', 'completed', 'rejected', 'cancelled'].includes(a.status)
+        a => a.requestedBy?._id === user._id && ['pending', 'approved', 'active', 'completed', 'rejected', 'cancelled', 'awaiting_payment', 'verification_pending', 'payment_pending'].includes(a.status)
       );
       setPendingRequest(pending);
       setCheckInHistory(history);
@@ -81,7 +83,7 @@ const UserDashboard = () => {
 
   const handleCheckout = () => {
     if (!currentAssignment) return;
-    
+
     const approvalTime = new Date(currentAssignment.approvalTime || currentAssignment.createdAt);
     const now = new Date();
     const diffHours = Math.abs(now - approvalTime) / 36e5;
@@ -100,7 +102,7 @@ const UserDashboard = () => {
       // but for now we use the same checkout endpoint or a cancel endpoint if available.
       // Assuming checkoutAssignment handles both or we just call it checkout for now)
       await checkoutAssignment(currentAssignment._id);
-      
+
       toast.success(showConfirmation.isWithin24Hours ? 'Booking cancelled successfully' : 'Successfully checked out from room');
       setShowConfirmation({ isOpen: false, isWithin24Hours: false });
       await fetchDashboardData();
@@ -215,23 +217,76 @@ const UserDashboard = () => {
       </div>
 
       {pendingRequest && (
-        <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-6 shadow-sm animate-slide-up">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-yellow-100 rounded-xl">
-              <ClockIcon className="w-6 h-6 text-yellow-600" />
+        <div className={`border rounded-2xl p-6 shadow-sm animate-slide-up ${pendingRequest.status === 'awaiting_payment' ? 'bg-blue-50 border-blue-100' :
+          pendingRequest.status === 'verification_pending' ? 'bg-purple-50 border-purple-100' :
+            pendingRequest.status === 'payment_pending' ? 'bg-orange-50 border-orange-100' :
+              'bg-yellow-50 border-yellow-100'
+          }`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className={`p-3 rounded-xl ${pendingRequest.status === 'awaiting_payment' ? 'bg-blue-100' :
+                pendingRequest.status === 'verification_pending' ? 'bg-purple-100' :
+                  pendingRequest.status === 'payment_pending' ? 'bg-orange-100' :
+                    'bg-yellow-100'
+                }`}>
+                <ClockIcon className={`w-6 h-6 ${pendingRequest.status === 'awaiting_payment' ? 'text-blue-600' :
+                  pendingRequest.status === 'verification_pending' ? 'text-purple-600' :
+                    pendingRequest.status === 'payment_pending' ? 'text-orange-600' :
+                      'text-yellow-600'
+                  }`} />
+              </div>
+              <div>
+                <h3 className={`text-lg font-semibold ${pendingRequest.status === 'awaiting_payment' ? 'text-blue-800' :
+                  pendingRequest.status === 'verification_pending' ? 'text-purple-800' :
+                    pendingRequest.status === 'payment_pending' ? 'text-orange-800' :
+                      'text-yellow-800'
+                  }`}>
+                  {pendingRequest.status === 'awaiting_payment' ? 'Payment Required' :
+                    pendingRequest.status === 'verification_pending' ? 'Payment Verification in Progress' :
+                      pendingRequest.status === 'payment_pending' ? 'Cash Payment Pending' :
+                        'Pending Check-in Request'}
+                </h3>
+                <p className={`mt-1 ${pendingRequest.status === 'awaiting_payment' ? 'text-blue-700' :
+                  pendingRequest.status === 'verification_pending' ? 'text-purple-700' :
+                    pendingRequest.status === 'payment_pending' ? 'text-orange-700' :
+                      'text-yellow-700'
+                  }`}>
+                  {pendingRequest.status === 'awaiting_payment'
+                    ? `You have booked Room ${pendingRequest.room.number}. Please complete payment to proceed.`
+                    : pendingRequest.status === 'verification_pending'
+                      ? `We are verifying your payment for Room ${pendingRequest.room.number}. This usually takes 24 hours.`
+                      : pendingRequest.status === 'payment_pending'
+                        ? `Please pay at the admin office for Room ${pendingRequest.room.number} (Ref: ${pendingRequest.referenceNumber}).`
+                        : `Your request for Room ${pendingRequest.room.number} is awaiting admin approval.`}
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-yellow-800">Pending Check-in Request</h3>
-              <p className="mt-1 text-yellow-700">
-                You have a pending check-in request for <span className="font-bold">Room {pendingRequest.room.number}</span>.
-                Waiting for admin approval.
-              </p>
-              <p className="mt-2 text-sm text-yellow-600 font-medium bg-yellow-100/50 inline-block px-3 py-1 rounded-lg">
-                Requested Period: {new Date(pendingRequest.startDate).toLocaleDateString()} - {new Date(pendingRequest.endDate).toLocaleDateString()}
-              </p>
-            </div>
+
+            {(pendingRequest.status === 'awaiting_payment' || pendingRequest.status === 'payment_pending') && (
+              <button
+                onClick={() => setIsPaymentModalOpen(true)}
+                className={`whitespace-nowrap px-6 py-2.5 font-medium rounded-xl shadow-sm transition-all active:scale-95 ${pendingRequest.status === 'awaiting_payment'
+                  ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'
+                  : 'bg-white text-orange-600 border border-orange-200 hover:bg-orange-50'
+                  }`}
+              >
+                {pendingRequest.status === 'awaiting_payment' ? 'Pay Now' : 'Pay via GCash'}
+              </button>
+            )}
           </div>
         </div>
+      )}
+
+      {/* Payment Modal */}
+      {pendingRequest && (
+        <PaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => setIsPaymentModalOpen(false)}
+          booking={pendingRequest}
+          onSuccess={() => {
+            fetchDashboardData();
+          }}
+        />
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -267,16 +322,15 @@ const UserDashboard = () => {
                 <button
                   onClick={handleCheckout}
                   disabled={isProcessing}
-                  className={`w-full py-2.5 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 group/btn ${
-                    (() => {
-                      const approvalTime = new Date(currentAssignment.approvalTime || currentAssignment.createdAt);
-                      const now = new Date();
-                      const diffHours = Math.abs(now - approvalTime) / 36e5;
-                      return diffHours <= 24 
-                        ? 'bg-orange-50 text-orange-600 hover:bg-orange-100' 
-                        : 'bg-red-50 text-red-600 hover:bg-red-100';
-                    })()
-                  }`}
+                  className={`w-full py-2.5 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 group/btn ${(() => {
+                    const approvalTime = new Date(currentAssignment.approvalTime || currentAssignment.createdAt);
+                    const now = new Date();
+                    const diffHours = Math.abs(now - approvalTime) / 36e5;
+                    return diffHours <= 24
+                      ? 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+                      : 'bg-red-50 text-red-600 hover:bg-red-100';
+                  })()
+                    }`}
                 >
                   <ArrowRightOnRectangleIcon className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
                   {isProcessing ? 'Processing...' : (
@@ -360,8 +414,8 @@ const UserDashboard = () => {
                     key={type}
                     onClick={() => setFilterType(type)}
                     className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize whitespace-nowrap ${filterType === type
-                        ? 'bg-primary-50 text-primary-700 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                      ? 'bg-primary-50 text-primary-700 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                       }`}
                   >
                     {type === 'completed' ? 'History' : type === 'pending' ? 'Pending' : type}
@@ -414,14 +468,14 @@ const UserDashboard = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${(assignment.status === 'active' || assignment.status === 'approved')
-                                ? 'bg-green-50 text-green-700 border-green-100'
-                                : assignment.status === 'completed'
-                                  ? 'bg-blue-50 text-blue-700 border-blue-100'
-                                  : assignment.status === 'rejected'
-                                    ? 'bg-red-50 text-red-700 border-red-100'
-                                    : assignment.status === 'cancelled'
-                                      ? 'bg-orange-50 text-orange-700 border-orange-100'
-                                      : 'bg-yellow-50 text-yellow-700 border-yellow-100'
+                              ? 'bg-green-50 text-green-700 border-green-100'
+                              : assignment.status === 'completed'
+                                ? 'bg-blue-50 text-blue-700 border-blue-100'
+                                : assignment.status === 'rejected'
+                                  ? 'bg-red-50 text-red-700 border-red-100'
+                                  : assignment.status === 'cancelled'
+                                    ? 'bg-orange-50 text-orange-700 border-orange-100'
+                                    : 'bg-yellow-50 text-yellow-700 border-yellow-100'
                               }`}>
                               {(assignment.status === 'active' || assignment.status === 'approved') ? 'Checked In' : assignment.status === 'completed' ? 'Check-out' : assignment.status === 'rejected' ? 'Rejected' : assignment.status === 'cancelled' ? 'Cancelled' : 'Pending'}
                             </span>
@@ -479,14 +533,14 @@ const UserDashboard = () => {
                           <p className="font-mono text-sm font-bold text-primary-600">{assignment.referenceNumber || 'N/A'}</p>
                         </div>
                         <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${(assignment.status === 'active' || assignment.status === 'approved')
-                            ? 'bg-green-50 text-green-700 border-green-100'
-                            : assignment.status === 'completed'
-                              ? 'bg-blue-50 text-blue-700 border-blue-100'
-                              : assignment.status === 'rejected'
-                                ? 'bg-red-50 text-red-700 border-red-100'
-                                : assignment.status === 'cancelled'
-                                  ? 'bg-orange-50 text-orange-700 border-orange-100'
-                                  : 'bg-yellow-50 text-yellow-700 border-yellow-100'
+                          ? 'bg-green-50 text-green-700 border-green-100'
+                          : assignment.status === 'completed'
+                            ? 'bg-blue-50 text-blue-700 border-blue-100'
+                            : assignment.status === 'rejected'
+                              ? 'bg-red-50 text-red-700 border-red-100'
+                              : assignment.status === 'cancelled'
+                                ? 'bg-orange-50 text-orange-700 border-orange-100'
+                                : 'bg-yellow-50 text-yellow-700 border-yellow-100'
                           }`}>
                           {(assignment.status === 'active' || assignment.status === 'approved') ? 'Checked In' : assignment.status === 'completed' ? 'Check-out' : assignment.status === 'rejected' ? 'Rejected' : assignment.status === 'cancelled' ? 'Cancelled' : 'Pending'}
                         </span>
@@ -588,8 +642,8 @@ const UserDashboard = () => {
       <ConfirmationModal
         isOpen={showConfirmation.isOpen}
         title={showConfirmation.isWithin24Hours ? "Cancel Booking?" : "Confirm Check-Out?"}
-        message={showConfirmation.isWithin24Hours 
-          ? "You are within the 24-hour grace period. You can cancel your booking now without penalty." 
+        message={showConfirmation.isWithin24Hours
+          ? "You are within the 24-hour grace period. You can cancel your booking now without penalty."
           : "Check-out after 24 hours is allowed, but cancellations are not refundable. Are you sure you want to proceed?"}
         onConfirm={handleConfirmAction}
         onCancel={() => setShowConfirmation({ isOpen: false, isWithin24Hours: false })}

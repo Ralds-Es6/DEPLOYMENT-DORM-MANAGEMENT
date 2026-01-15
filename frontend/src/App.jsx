@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import Sidebar from './components/Sidebar';
 import Footer from './components/Footer';
+import ChatWidget from './components/ChatWidget';
 import AppRouter from './routes/AppRouter';
 import './App.css';
 
@@ -82,6 +83,7 @@ function AppContent() {
             <div className="hidden lg:block">
               <Footer />
             </div>
+            <ChatWidget />
           </div>
         </div>
       ) : (

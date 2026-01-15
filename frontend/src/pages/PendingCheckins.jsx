@@ -21,7 +21,8 @@ import {
   AcademicCapIcon,
   MagnifyingGlassIcon,
   PhotoIcon,
-  PhoneIcon
+  PhoneIcon,
+  CreditCardIcon
 } from '@heroicons/react/24/outline';
 
 const PendingCheckins = () => {
@@ -88,7 +89,7 @@ const PendingCheckins = () => {
   const getFilteredAssignments = () => {
     // First, filter out any assignments with missing user data
     const validAssignments = pendingAssignments.filter(assignment => assignment.requestedBy && assignment.requestedBy._id);
-    
+
     if (!searchQuery.trim()) {
       return validAssignments;
     }
@@ -225,6 +226,17 @@ const PendingCheckins = () => {
                       <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-primary-50 text-primary-700 border border-primary-100 font-mono">
                         {assignment.referenceNumber || 'N/A'}
                       </span>
+                      {/* Status Badge */}
+                      <span className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${assignment.status === 'verification_pending' ? 'bg-purple-50 text-purple-700 border-purple-100' :
+                        assignment.status === 'awaiting_payment' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                          assignment.status === 'payment_pending' ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                            'bg-yellow-50 text-yellow-700 border-yellow-100'
+                        }`}>
+                        {assignment.status === 'verification_pending' ? 'Verifying Payment' :
+                          assignment.status === 'awaiting_payment' ? 'Awaiting Payment' :
+                            assignment.status === 'payment_pending' ? 'Cash Pending' :
+                              'New Request'}
+                      </span>
                       <span className="text-xs font-medium text-gray-500 flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
                         <ClockIcon className="w-3.5 h-3.5" />
                         {new Date(assignment.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -281,9 +293,9 @@ const PendingCheckins = () => {
                           </button>
                         </div>
                         <div className="h-32 w-full bg-white rounded-lg border border-gray-200 overflow-hidden cursor-pointer" onClick={() => setSelectedIdImage(resolveImageUrl(assignment.idImage))}>
-                          <img 
-                            src={resolveImageUrl(assignment.idImage)} 
-                            alt="User ID" 
+                          <img
+                            src={resolveImageUrl(assignment.idImage)}
+                            alt="User ID"
                             className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                           />
                         </div>
@@ -352,9 +364,9 @@ const PendingCheckins = () => {
         maxWidth="max-w-7xl"
       >
         <div className="p-1 flex justify-center bg-gray-100 rounded-lg overflow-hidden">
-          <img 
-            src={selectedIdImage} 
-            alt="Full size ID" 
+          <img
+            src={selectedIdImage}
+            alt="Full size ID"
             className="max-w-full max-h-[85vh] object-contain"
           />
         </div>
@@ -372,7 +384,7 @@ const PendingCheckins = () => {
       <ConfirmationModal
         isOpen={showConfirmation}
         title={confirmationData?.approved ? "Approve Check-In?" : "Reject Check-In?"}
-        message={confirmationData?.approved 
+        message={confirmationData?.approved
           ? `Are you sure you want to approve the check-in request for ${confirmationData?.assignmentData?.requestedBy?.name}?`
           : `Are you sure you want to reject the check-in request for ${confirmationData?.assignmentData?.requestedBy?.name}?`
         }

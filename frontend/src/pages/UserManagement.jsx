@@ -146,95 +146,179 @@ const UserManagement = () => {
   return (
     <>
       <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-display font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-500 mt-1">Manage system users, roles, and access permissions</p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-display font-bold text-gray-900">User Management</h1>
+            <p className="text-gray-500 mt-1">Manage system users, roles, and access permissions</p>
+          </div>
+
+          <div className="relative group">
+            <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-primary-500 transition-colors" />
+            <input
+              type="text"
+              placeholder="Search Users..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent w-full md:w-64 shadow-sm transition-all"
+            />
+          </div>
         </div>
 
-        <div className="relative group">
-          <MagnifyingGlassIcon className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-primary-500 transition-colors" />
-          <input
-            type="text"
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent w-full md:w-64 shadow-sm transition-all"
-          />
-        </div>
-      </div>
+        <div className="card overflow-hidden bg-white border border-gray-100 shadow-sm rounded-2xl">
+          <div className="overflow-x-auto bg-gray-50/30">
+            {/* Desktop View */}
+            <table className="min-w-full divide-y divide-gray-100 hidden md:table">
+              <thead className="bg-gray-50/50">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User Info</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Created At</th>
+                  <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-50">
+                {paginatedUsers.map((u) => (
+                  <tr key={u._id} className="hover:bg-gray-50/50 transition-colors group">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-600 ring-4 ring-white">
+                          <UserIcon className="w-5 h-5" />
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-bold text-gray-900">{u.name}</div>
+                          <div className="text-xs text-gray-500 flex items-center gap-1">
+                            <EnvelopeIcon className="w-3 h-3" />
+                            {u.email}
+                          </div>
+                          {u.userId && (
+                            <div className="text-xs text-primary-600 mt-0.5 font-medium">ID: {u.userId}</div>
+                          )}
+                          <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+                            <PhoneIcon className="w-3 h-3" />
+                            {u.mobileNumber || 'No Mobile'}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${u.isSuperAdmin
+                        ? 'bg-amber-50 text-amber-700 border-amber-100'
+                        : u.isAdmin
+                          ? 'bg-purple-50 text-purple-700 border-purple-100'
+                          : 'bg-blue-50 text-blue-700 border-blue-100'
+                        }`}>
+                        <ShieldCheckIcon className="w-3 h-3 mr-1" />
+                        {u.isSuperAdmin ? 'Super Admin' : u.isAdmin ? 'Admin' : 'User'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${u.isBlocked
+                        ? 'bg-red-50 text-red-700 border-red-100'
+                        : 'bg-green-50 text-green-700 border-green-100'
+                        }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${u.isBlocked ? 'bg-red-500' : 'bg-green-500'
+                          }`}></span>
+                        {u.isBlocked ? 'Blocked' : 'Active'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(u.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      {!u.isAdmin && (
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {u.isBlocked ? (
+                            <button
+                              onClick={() => handleUnblockUser(u._id, u.name)}
+                              className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              title="Unblock User"
+                            >
+                              <CheckCircleIcon className="w-5 h-5" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleBlockUser(u._id, u.name)}
+                              className="p-1.5 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
+                              title="Block User"
+                            >
+                              <NoSymbolIcon className="w-5 h-5" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteUser(u._id, u.name)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete User"
+                          >
+                            <TrashIcon className="w-5 h-5" />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
 
-      <div className="card overflow-hidden bg-white border border-gray-100 shadow-sm rounded-2xl">
-        <div className="overflow-x-auto bg-gray-50/30">
-          {/* Desktop View */}
-          <table className="min-w-full divide-y divide-gray-100 hidden md:table">
-            <thead className="bg-gray-50/50">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">User Info</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Created At</th>
-                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-50">
+            {/* Mobile View (Stacked Cards) */}
+            <div className="md:hidden space-y-3 p-2">
               {paginatedUsers.map((u) => (
-                <tr key={u._id} className="hover:bg-gray-50/50 transition-colors group">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className="h-10 w-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-600 ring-4 ring-white">
+                <div key={u._id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-3">
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="h-10 w-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-600 ring-2 ring-white shrink-0">
                         <UserIcon className="w-5 h-5" />
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-bold text-gray-900">{u.name}</div>
-                        <div className="text-xs text-gray-500 flex items-center gap-1">
-                          <EnvelopeIcon className="w-3 h-3" />
-                          {u.email}
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-bold text-gray-900 truncate">{u.name}</div>
+                        <div className="text-xs text-gray-500 flex items-center gap-1 truncate">
+                          <EnvelopeIcon className="w-3 h-3 flex-shrink-0" />
+                          <span className="truncate">{u.email}</span>
                         </div>
                         {u.userId && (
-                          <div className="text-xs text-primary-600 mt-0.5 font-medium">ID: {u.userId}</div>
+                          <div className="text-xs text-primary-600 mt-0.5 font-medium truncate">ID: {u.userId}</div>
                         )}
-                        <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
-                          <PhoneIcon className="w-3 h-3" />
+                        <div className="text-xs text-gray-500 mt-0.5 truncate flex items-center gap-1">
+                          <PhoneIcon className="w-3 h-3 flex-shrink-0" />
                           {u.mobileNumber || 'No Mobile'}
                         </div>
                       </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border ${u.isSuperAdmin
-                        ? 'bg-amber-50 text-amber-700 border-amber-100'
-                        : u.isAdmin
-                        ? 'bg-purple-50 text-purple-700 border-purple-100'
-                        : 'bg-blue-50 text-blue-700 border-blue-100'
-                      }`}>
-                      <ShieldCheckIcon className="w-3 h-3 mr-1" />
-                      {u.isSuperAdmin ? 'Super Admin' : u.isAdmin ? 'Admin' : 'User'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${u.isBlocked
-                        ? 'bg-red-50 text-red-700 border-red-100'
-                        : 'bg-green-50 text-green-700 border-green-100'
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 ${u.isBlocked
+                      ? 'bg-red-50 text-red-700 border-red-100'
+                      : 'bg-green-50 text-green-700 border-green-100'
                       }`}>
                       <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${u.isBlocked ? 'bg-red-500' : 'bg-green-500'
                         }`}></span>
                       {u.isBlocked ? 'Blocked' : 'Active'}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(u.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                    <div className="flex flex-col gap-1">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border w-fit ${u.isSuperAdmin
+                        ? 'bg-amber-50 text-amber-700 border-amber-100'
+                        : u.isAdmin
+                          ? 'bg-purple-50 text-purple-700 border-purple-100'
+                          : 'bg-blue-50 text-blue-700 border-blue-100'
+                        }`}>
+                        <ShieldCheckIcon className="w-3 h-3 mr-1" />
+                        {u.isSuperAdmin ? 'Super Admin' : u.isAdmin ? 'Admin' : 'User'}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        Joined: {new Date(u.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+
                     {!u.isAdmin && (
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-2">
                         {u.isBlocked ? (
                           <button
                             onClick={() => handleUnblockUser(u._id, u.name)}
-                            className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                            className="p-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
                             title="Unblock User"
                           >
                             <CheckCircleIcon className="w-5 h-5" />
@@ -242,7 +326,7 @@ const UserManagement = () => {
                         ) : (
                           <button
                             onClick={() => handleBlockUser(u._id, u.name)}
-                            className="p-1.5 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors"
+                            className="p-2 text-yellow-600 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors"
                             title="Block User"
                           >
                             <NoSymbolIcon className="w-5 h-5" />
@@ -250,142 +334,58 @@ const UserManagement = () => {
                         )}
                         <button
                           onClick={() => handleDeleteUser(u._id, u.name)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
                           title="Delete User"
                         >
                           <TrashIcon className="w-5 h-5" />
                         </button>
                       </div>
                     )}
-                  </td>
-                </tr>
+                  </div>
+                </div>
               ))}
-            </tbody>
-          </table>
-
-          {/* Mobile View (Stacked Cards) */}
-          <div className="md:hidden space-y-3 p-2">
-            {paginatedUsers.map((u) => (
-              <div key={u._id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm space-y-3">
-                <div className="flex justify-between items-start gap-3">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="h-10 w-10 rounded-full bg-primary-50 flex items-center justify-center text-primary-600 ring-2 ring-white shrink-0">
-                      <UserIcon className="w-5 h-5" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-bold text-gray-900 truncate">{u.name}</div>
-                      <div className="text-xs text-gray-500 flex items-center gap-1 truncate">
-                        <EnvelopeIcon className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate">{u.email}</span>
-                      </div>
-                      {u.userId && (
-                        <div className="text-xs text-primary-600 mt-0.5 font-medium truncate">ID: {u.userId}</div>
-                      )}
-                      <div className="text-xs text-gray-500 mt-0.5 truncate flex items-center gap-1">
-                        <PhoneIcon className="w-3 h-3 flex-shrink-0" />
-                        {u.mobileNumber || 'No Mobile'}
-                      </div>
-                    </div>
-                  </div>
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border shrink-0 ${u.isBlocked
-                      ? 'bg-red-50 text-red-700 border-red-100'
-                      : 'bg-green-50 text-green-700 border-green-100'
-                    }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${u.isBlocked ? 'bg-red-500' : 'bg-green-500'
-                      }`}></span>
-                    {u.isBlocked ? 'Blocked' : 'Active'}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  <div className="flex flex-col gap-1">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border w-fit ${u.isSuperAdmin
-                        ? 'bg-amber-50 text-amber-700 border-amber-100'
-                        : u.isAdmin
-                        ? 'bg-purple-50 text-purple-700 border-purple-100'
-                        : 'bg-blue-50 text-blue-700 border-blue-100'
-                      }`}>
-                      <ShieldCheckIcon className="w-3 h-3 mr-1" />
-                      {u.isSuperAdmin ? 'Super Admin' : u.isAdmin ? 'Admin' : 'User'}
-                    </span>
-                    <span className="text-xs text-gray-400">
-                      Joined: {new Date(u.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  {!u.isAdmin && (
-                    <div className="flex items-center gap-2">
-                      {u.isBlocked ? (
-                        <button
-                          onClick={() => handleUnblockUser(u._id, u.name)}
-                          className="p-2 text-green-600 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
-                          title="Unblock User"
-                        >
-                          <CheckCircleIcon className="w-5 h-5" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => handleBlockUser(u._id, u.name)}
-                          className="p-2 text-yellow-600 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors"
-                          title="Block User"
-                        >
-                          <NoSymbolIcon className="w-5 h-5" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDeleteUser(u._id, u.name)}
-                        className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
-                        title="Delete User"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Pagination Controls */}
-        {filteredUsers.length > 0 && (
-          <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center">
-            <p className="text-sm text-gray-500">
-              Showing <span className="font-medium text-gray-900">{startIndex + 1}</span> to <span className="font-medium text-gray-900">{Math.min(endIndex, filteredUsers.length)}</span> of <span className="font-medium text-gray-900">{filteredUsers.length}</span> users
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={handlePreviousPage}
-                disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-white hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                <ChevronLeftIcon className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleNextPage}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-white hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                <ChevronRightIcon className="w-4 h-4" />
-              </button>
             </div>
           </div>
-        )}
-      </div>
-    </div>
 
-    {/* Confirmation Modal */}
-    <ConfirmationModal
-      isOpen={showConfirmation}
-      title="Delete User Account?"
-      message={`Are you sure you want to delete ${confirmationData?.userName}? This action cannot be undone.`}
-      onConfirm={handleConfirmDelete}
-      onCancel={() => setShowConfirmation(false)}
-      confirmText="Delete"
-      cancelText="Cancel"
-      isLoading={isProcessing}
-      variant="danger"
-    />
+          {/* Pagination Controls */}
+          {filteredUsers.length > 0 && (
+            <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center">
+              <p className="text-sm text-gray-500">
+                Showing <span className="font-medium text-gray-900">{startIndex + 1}</span> to <span className="font-medium text-gray-900">{Math.min(endIndex, filteredUsers.length)}</span> of <span className="font-medium text-gray-900">{filteredUsers.length}</span> users
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handlePreviousPage}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-white hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  <ChevronLeftIcon className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleNextPage}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-white hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  <ChevronRightIcon className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showConfirmation}
+        title="Delete User Account?"
+        message={`Are you sure you want to delete ${confirmationData?.userName}? This action cannot be undone.`}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowConfirmation(false)}
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={isProcessing}
+        variant="danger"
+      />
     </>
   );
 };

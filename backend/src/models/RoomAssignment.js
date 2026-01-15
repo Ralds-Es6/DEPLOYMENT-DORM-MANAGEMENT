@@ -33,8 +33,8 @@ const roomAssignmentSchema = new mongoose.Schema(
     status: {
       type: String,
       required: true,
-      enum: ['pending', 'approved', 'rejected', 'active', 'completed', 'cancelled'],
-      default: 'pending',
+      enum: ['pending', 'approved', 'rejected', 'active', 'completed', 'cancelled', 'awaiting_payment', 'verification_pending', 'payment_pending'],
+      default: 'awaiting_payment',
     },
     notes: {
       type: String,
@@ -67,11 +67,11 @@ const roomAssignmentSchema = new mongoose.Schema(
 );
 
 // Middleware to handle room status updates when assignment status changes
-roomAssignmentSchema.pre('save', async function(next) {
+roomAssignmentSchema.pre('save', async function (next) {
   if (this.isModified('status')) {
     const Room = this.model('Room');
     const room = await Room.findById(this.room);
-    
+
     if (!room) {
       console.error(`[RoomAssignment Middleware] Room not found with ID: ${this.room}`);
       return next(new Error('Room not found'));
@@ -80,13 +80,13 @@ roomAssignmentSchema.pre('save', async function(next) {
     // Get the previous status from Mongoose's changeTracking
     // When updating an existing document, getters return the original value
     let previousStatus = this.status;
-    
+
     if (!this.isNew) {
       // For updates, use the original value from the database
       const originalDoc = this.constructor.hydrate(this._doc);
       const dbVersion = await this.constructor.findById(this._id, { status: 1 });
       previousStatus = dbVersion?.status || this.status;
-      
+
       console.log(`[RoomAssignment Middleware] DB Previous Status: ${previousStatus}, New Status: ${this.status}`);
     } else {
       console.log(`[RoomAssignment Middleware] New assignment with status: ${this.status}`);
@@ -101,9 +101,9 @@ roomAssignmentSchema.pre('save', async function(next) {
         // Room stays available even with pending assignment
         console.log(`[RoomAssignment Middleware] Pending: No occupancy change`);
         break;
-        
+
       case 'approved':
-        if (previousStatus === 'pending') {
+        if (['pending', 'verification_pending', 'payment_pending', 'awaiting_payment'].includes(previousStatus)) {
           // Check capacity before allowing approval
           if (room.occupied >= room.capacity) {
             console.error(`[RoomAssignment Middleware] Room at capacity, cannot approve`);
@@ -119,7 +119,7 @@ roomAssignmentSchema.pre('save', async function(next) {
           room.status = room.occupied >= room.capacity ? 'occupied' : 'available';
           console.log(`[RoomAssignment Middleware] Room ${room.number}: Occupancy after = ${room.occupied}/${room.capacity}, Status = ${room.status}`);
         } else {
-          console.log(`[RoomAssignment Middleware] Approved: But previousStatus is ${previousStatus}, not 'pending'. Skipping occupancy change.`);
+          console.log(`[RoomAssignment Middleware] Approved: But previousStatus is ${previousStatus}. Skipping occupancy change.`);
         }
         break;
 
@@ -129,14 +129,14 @@ roomAssignmentSchema.pre('save', async function(next) {
           this.checkInTime = new Date();
         }
         // Active status doesn't change occupancy (it's already incremented on approved)
-        if (['approved', 'pending'].includes(previousStatus)) {
-          // If transitioning from pending to active (skip approved), increment occupancy
-          if (previousStatus === 'pending') {
+        if (['approved', 'pending', 'verification_pending', 'payment_pending'].includes(previousStatus)) {
+          // If transitioning from non-approved states to active, increment occupancy
+          if (previousStatus !== 'approved') {
             if (room.occupied >= room.capacity) {
               console.error(`[RoomAssignment Middleware] Room at capacity for active transition`);
               return next(new Error('Room is already at full capacity'));
             }
-            console.log(`[RoomAssignment Middleware] Active: Incrementing occupancy (pending→active)`);
+            console.log(`[RoomAssignment Middleware] Active: Incrementing occupancy (${previousStatus}→active)`);
             room.occupied = room.occupied + 1;
             if (!room.currentOccupants.includes(this.requestedBy)) {
               room.currentOccupants.push(this.requestedBy);

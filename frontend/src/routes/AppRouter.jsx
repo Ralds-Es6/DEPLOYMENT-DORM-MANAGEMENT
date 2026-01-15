@@ -12,6 +12,8 @@ import UserManagement from "../pages/UserManagement";
 import ReportManagement from "../pages/ReportManagement";
 import PrintReport from "../pages/PrintReport";
 import AdminSettings from "../pages/AdminSettings";
+import AdminPayments from "../pages/AdminPayments";
+import AdminChat from "../pages/AdminChat";
 
 // User Pages
 import UserDashboard from "../pages/UserDashboard";
@@ -75,6 +77,8 @@ const AppRouter = () => {
             <Route path="user-management" element={<UserManagement />} />
             <Route path="report-management" element={<ReportManagement />} />
             <Route path="print-report" element={<PrintReport />} />
+            <Route path="payments" element={<AdminPayments />} />
+            <Route path="messages" element={<AdminChat />} />
             <Route path="settings" element={<AdminSettings />} />
           </>
         )}

@@ -17,7 +17,9 @@ import {
   ChevronDownIcon,
   XMarkIcon,
   Cog6ToothIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  CreditCardIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 
 const Sidebar = ({ onClose }) => {
@@ -44,6 +46,8 @@ const Sidebar = ({ onClose }) => {
     { path: '/checkin-history', label: 'Check-in History', icon: ClipboardDocumentCheckIcon },
     { path: '/pending-checkins', label: 'Pending Check-ins', icon: ClockIcon },
     { path: '/user-management', label: 'User Management', icon: UsersIcon },
+    { path: '/payments', label: 'Transactions', icon: CreditCardIcon },
+    { path: '/messages', label: 'Support Messages', icon: ChatBubbleLeftRightIcon },
     {
       label: 'Report Management',
       icon: DocumentChartBarIcon,

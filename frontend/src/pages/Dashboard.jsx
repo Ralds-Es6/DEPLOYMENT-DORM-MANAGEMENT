@@ -663,7 +663,7 @@ const Dashboard = () => {
                   {checkInOutPeriod === 'yearly' && chartData.checkInOut.yearly?.label}
                 </p>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4 border border-green-100">
                   <p className="text-xs font-medium text-green-600 mb-1">Total Check-ins</p>
                   <p className="text-2xl font-bold text-green-900">

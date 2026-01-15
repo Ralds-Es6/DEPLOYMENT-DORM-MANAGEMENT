@@ -11,6 +11,9 @@ import assignmentRoutes from './routes/assignmentRoutes.js';
 import maintenanceRoutes from './routes/maintenanceRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import systemSettingsRoutes from './routes/systemSettingsRoutes.js';
+import messageRoutes from './routes/messageRoutes.js';
 
 dotenv.config();
 
@@ -22,9 +25,9 @@ const __dirname = path.dirname(__filename);
 // Middleware
 app.use(cors({
   origin: [
-    'http://localhost:5173', 
-    'http://localhost:5174', 
-    'http://localhost:5175', 
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
     'http://localhost:5176',
     'https://karmidorm.site',
     'http://karmidorm.site'
@@ -42,6 +45,9 @@ app.use('/api/assignments', assignmentRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/settings', systemSettingsRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -61,7 +67,7 @@ app.use((req, res) => {
 connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    
+
     // Schedule cleanup of expired temporary registrations every 2 minutes as a safety backup
     setInterval(cleanupExpiredRegistrations, 2 * 60 * 1000);
     console.log('[Scheduler] Cleanup task scheduled for expired registrations (every 2 minutes)');

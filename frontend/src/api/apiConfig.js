@@ -7,7 +7,7 @@ const getApiOrigin = () => {
     return 'https://karmidorm.site';
   }
   // Use environment variable or fallback to localhost
-  return import.meta.env.VITE_API_ORIGIN || 'http://localhost:5000';
+  return import.meta.env.VITE_API_ORIGIN || import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 };
 
 const API_ORIGIN = getApiOrigin();
@@ -26,7 +26,7 @@ api.interceptors.request.use(
     // Check both adminInfo and userInfo for token
     const adminInfo = localStorage.getItem('adminInfo');
     const userInfo = localStorage.getItem('userInfo');
-    
+
     try {
       if (adminInfo) {
         const { token } = JSON.parse(adminInfo);
@@ -58,7 +58,7 @@ api.interceptors.response.use(
   (error) => {
     // Don't redirect to login for public routes
     const isPublicRoute = error.config?.url?.includes('/public');
-    
+
     if (error.response?.status === 401 && !isPublicRoute) {
       // Clear invalid tokens from both keys
       localStorage.removeItem('userInfo');

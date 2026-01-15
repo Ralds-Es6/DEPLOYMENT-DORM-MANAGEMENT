@@ -7,6 +7,7 @@ import CheckInModal from '../components/CheckInModal';
 import TermsAndConditionsModal from '../components/TermsAndConditionsModal';
 import RoomCard from '../components/RoomCard';
 import Modal from '../components/Modal';
+import PaymentModal from '../components/PaymentModal';
 import toast from 'react-hot-toast';
 import { MEDIA_BASE_URL } from '../api/apiConfig';
 import {
@@ -37,6 +38,7 @@ const UserRoomList = () => {
   const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -228,7 +230,7 @@ const UserRoomList = () => {
           <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100">
             <ClipboardDocumentCheckIcon className="h-10 w-10 text-green-600" />
           </div>
-          
+
           <div>
             <h3 className="text-lg font-medium text-gray-900">Request Successfully Submitted!</h3>
             <p className="text-sm text-gray-500 mt-2">
@@ -260,18 +262,34 @@ const UserRoomList = () => {
           <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-4 text-left flex gap-3">
             <InformationCircleIcon className="w-5 h-5 text-yellow-600 flex-shrink-0" />
             <p className="text-sm text-yellow-800">
-              Please present the <strong>Reference Number</strong> at the administration office to complete your payment and approve your check-in request.
+              Please complete your payment to finalize the check-in request.
             </p>
           </div>
 
           <button
-            onClick={() => setBookingSuccess(null)}
+            onClick={() => {
+              setBookingSuccess(null);
+              setIsPaymentModalOpen(true);
+            }}
             className="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-3 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:text-sm transition-colors"
           >
-            I Understand
+            Proceed to Payment
           </button>
         </div>
       </Modal>
+
+      {/* Payment Modal */}
+      {pendingRequest && (
+        <PaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={() => setIsPaymentModalOpen(false)}
+          booking={pendingRequest}
+          onSuccess={() => {
+            fetchRooms();
+            checkPendingRequests();
+          }}
+        />
+      )}
 
       {pendingRequest && (
         <div className="bg-gradient-to-r from-primary-50 to-white border border-primary-100 rounded-2xl p-6 animate-fade-in shadow-sm relative overflow-hidden">
